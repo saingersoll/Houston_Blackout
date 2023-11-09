@@ -11,7 +11,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 ```
 
 ## Overview
@@ -81,6 +81,8 @@ library(tidyverse)
 library(sf)
 library(raster)
 library(tmap)
+library(terra)
+library(stars)
 ```
 
 Q: the files I downloaded from the README don't have the same file names for VIIRS ?
@@ -94,37 +96,59 @@ Q: the files I downloaded from the README don't have the same file names for VII
 -   `VNP46A1.A2021047.h08v05.001.2021048091106.h5.tif`: tile h08v05, collected on 2021-02-16
 -   `VNP46A1.A2021047.h08v06.001.2021048091105.h5.tif`: tile h08v06, collected on 2021-02-16
 
+### Reading in with sf
+
 ```{r}
-VIIRS_05_07 <- st_read("../data/data-3/VNP46A1/._VNP46A1.A2021038.h08v05.001.2021039064328")
+VIIRS_05_07 <- st_read("data/VNP46A1/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif")
 
-VIIRS_06_07 <- st_read("../data/data-3/VNP46A1/._VNP46A1.A2021038.h08v05.001.2021039064328")
+VIIRS_06_07 <- st_read("data/VNP46A1/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")
 
-VIIRS_05_16 <- st_read("../data/data-3/VNP46A1/._VNP46A1.A2021038.h08v05.001.2021039064328")
+VIIRS_05_16 <- st_read("data/VNP46A1/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
 
-VIIRS_06_16 <- st_read("../data/data-3/VNP46A1/._VNP46A1.A2021038.h08v05.001.2021039064328")
+VIIRS_06_16 <- st_read("data/VNP46A1/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif")
+```
+
+## Stars Reading in tif
+
+```{r}
+VIIRS_05_07 = system.file("data/VNP46A1/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif", package = "stars")
+
+VIIRS_05_07 = read_stars(VIIRS_05_07)
 ```
 
 ### Reading in Road Data
 
 ```{r}
-roads <- st_read("../data/data-3/gis_osm_roads_free_1.gpkg/gis_osm_roads_free_1.gpkg")
+roads <- st_read("data/gis_osm_roads_free_1.gpkg/gis_osm_roads_free_1.gpkg")
 ```
 
 ### Reading in House Data
 
 ```{r}
-houses <- st_read("../data/data-3/gis_osm_buildings_a_free_1.gpkg/gis_osm_buildings_a_free_1.gpkg")
+houses <- st_read("data/gis_osm_buildings_a_free_1.gpkg/gis_osm_buildings_a_free_1.gpkg")
 ```
 
 ### Read in Socioeconomic Data
 
 Q: the files I downloaded from the README don't have the same file names for socio eco
 
+gitignore data folder, use stars read for remote sensing titles
+
+Use st_read for socioeco.
+
+```{r}
+socioeconomic = system.file("data/ACS_2019_5YR_TRACT_48.gdb/ACS_2019_5YR_TRACT_48.gdb", package = "stars")
+
+socioeconomic = read_stars(socioeconomic)
+```
+
 ```{r}
 rootdir <- ("~1/EDS223")
-datadir <- file.path(rootdir,"data","data-3")
+datadir <- file.path(rootdir,"data","data-3","ACS_2019_5YR_TRACT_48.gdb")
 
 download.file(datadir,"ACS_2019_5YR_TRACT_48.gdb")
+
+
 
 socioeconomic <- "ACS_2019_5YR_TRACT_48.gdb"
 
