@@ -121,7 +121,7 @@ roads <- st_read("data/gis_osm_roads_free_1.gpkg/gis_osm_roads_free_1.gpkg")
 houses <- st_read("data/gis_osm_buildings_a_free_1.gpkg/gis_osm_buildings_a_free_1.gpkg")
 ```
 
-### Read in Socioeconomic Data  with sf
+### Read in Socioeconomic Data with sf
 
 Q: the files I downloaded from the README don't have the same file names for socioeco
 
@@ -130,19 +130,9 @@ gitignore data folder, use stars read for remote sensing titles
 Use st_read for socioeco.
 
 ```{r}
-socioeconomic = st_read("C:/1/EDS223/assignment-3-saingersoll/data/ACS_2019_5YR_TRACT_48.gdb", layer = "ACS_2019_5YR_TRACT_48")
-```
+socioeconomic <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "ACS_2019_5YR_TRACT_48_TEXAS")
 
-```{r}
-socioeconomic = st_read("data/ACS_2019_5YR_TRACT_48.gdb", layer = "ACS_2019_5YR_TRACT_48")
-```
-
-```{r}
-socioeconomic = st_read("data/ACS_2019_5YR_TRACT_48.gdb", layer = "ACS_2019_5YR_TRACT_48")
-```
-
-```{r}
-socioeconomic = st_read(here("data/ACS_2019_5YR_TRACT_48.gdb", layer = "ACS_2019_5YR_TRACT_48"))
+income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME")
 ```
 
 Below is an outline of the steps you should consider taking to achieve the assignment tasks.
