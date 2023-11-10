@@ -130,6 +130,18 @@ gitignore data folder, use stars read for remote sensing titles
 Use st_read for socioeco.
 
 ```{r}
+socioeconomic = st_read("C:/1/EDS223/assignment-3-saingersoll/data/ACS_2019_5YR_TRACT_48.gdb", layer = "ACS_2019_5YR_TRACT_48")
+```
+
+```{r}
+socioeconomic = st_read("data/ACS_2019_5YR_TRACT_48.gdb", layer = "ACS_2019_5YR_TRACT_48")
+```
+
+```{r}
+socioeconomic = st_read("data/ACS_2019_5YR_TRACT_48.gdb", layer = "ACS_2019_5YR_TRACT_48")
+```
+
+```{r}
 socioeconomic = st_read(here("data/ACS_2019_5YR_TRACT_48.gdb", layer = "ACS_2019_5YR_TRACT_48"))
 ```
 
