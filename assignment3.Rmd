@@ -86,29 +86,6 @@ library(stars)
 library(here)
 ```
 
-Q: the files I downloaded from the README don't have the same file names for VIIRS ?
-
-### Reading VIIRS Data
-
-`VNP46A1` folder.
-
--   `VNP46A1.A2021038.h08v05.001.2021039064328.h5.tif`: tile h08v05, collected on 2021-02-07
--   `VNP46A1.A2021038.h08v06.001.2021039064329.h5.tif`: tile h08v06, collected on 2021-02-07
--   `VNP46A1.A2021047.h08v05.001.2021048091106.h5.tif`: tile h08v05, collected on 2021-02-16
--   `VNP46A1.A2021047.h08v06.001.2021048091105.h5.tif`: tile h08v06, collected on 2021-02-16
-
-## Stars Reading in tif
-
-```{r}
-VIIRS_05_07 <- read_stars("data/VNP46A1/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif")
-
-VIIRS_06_07 <- read_stars("data/VNP46A1/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")
-
-VIIRS_05_16 <- read_stars("data/VNP46A1/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
-
-VIIRS_06_16 <- read_stars("data/VNP46A1/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif")
-```
-
 ### Reading in Road Data with sf
 
 ```{r}
@@ -123,12 +100,6 @@ houses <- st_read("data/gis_osm_buildings_a_free_1.gpkg/gis_osm_buildings_a_free
 
 ### Read in Socioeconomic Data with sf
 
-Q: the files I downloaded from the README don't have the same file names for socioeco
-
-gitignore data folder, use stars read for remote sensing titles
-
-Use st_read for socioeco.
-
 ```{r}
 socioeconomic <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "ACS_2019_5YR_TRACT_48_TEXAS")
 
@@ -137,38 +108,64 @@ income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME")
 
 Below is an outline of the steps you should consider taking to achieve the assignment tasks.
 
-#### Find locations of blackouts
-
-For improved computational efficiency and easier interoperability with `sf`, I recommend using the `stars` package for raster handling.\
+# Finding Locations of Blackouts
 
 ##### combine the data (5 points)
 
--   read in night lights tiles\
--   combine tiles into a single `stars` object for each date (2021-02-07 and 2021-02-16)\
-    -   hint: use `st_mosaic`\
+## Reading VIIRS Data
+
+Reading in night lights tiles:
+
+##### Stars Reading in tif
+
+```{r}
+VIIRS_05_07 <- read_stars("data/VNP46A1/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif")
+VIIRS_06_07 <- read_stars("data/VNP46A1/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")
+VIIRS_05_16 <- read_stars("data/VNP46A1/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
+VIIRS_06_16 <- read_stars("data/VNP46A1/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif")
+```
+
+## Combining Tiles
+
+Combining tiles into a single `stars` object for each date (2021-02-07 and 2021-02-16).
 
 ```{r include=TRUE}
+# Combining tiles for each date as a stars object
 
+feb_07 <- st_mosaic(VIIRS_05_07, VIIRS_06_07)
+feb_16 <- st_mosaic(VIIRS_05_16, VIIRS_06_16)
 ```
+
+# Making a Mask
 
 ##### create a blackout mask (10 points)
 
--   find the change in night lights intensity (presumably) caused by the storm\
--   reclassify the difference raster, assuming that any location that experienced a drop of more than 200 nW cm^-2^sr^-1^ experienced a blackout\
--   assign `NA` to all locations that experienced a drop of *less* than 200 nW cm^-2^sr^-1^\
+To find the change in night-light intensity (presumably) caused by the storm, we must make a mask to conceal the data that experienced a drop less than 200 nW cm^-2^sr^-1^. This reclassification of the difference raster was done assuming that any location that experienced a drop of more than 200 nW cm^-2^sr^-1^ experienced a blackout. All **locations not considered blackout zones** were assigned `NA.`
 
 ```{r include=TRUE}
+# Creating a mask to identify locations that experienced a drop greater than 200 nW cm-2sr-1
 
+blackout_locations <- (feb_07 - feb_16) > 200
+
+# Assigning non-blackout locations to be NA values
+
+blackout_locations[blackout_locations == FALSE] <- NA
 ```
+
+# Vectorized Mask
 
 ##### vectorize the mask (5 points)
 
--   use `st_as_sf()` to vectorize the blackout mask\
--   fix any invalid geometries using `st_make_valid`
+To vectorize the blackout mask, apply `st_as_sf()` and correct invalid geometries by piping `st_make_valid`.
 
 ```{r include=TRUE}
+# Transforming the mask into a vector and fixing improper geometries
 
+vector_blackout_locations <- st_as_sf(blackout_locations) %>% 
+  st_make_valid(vector_blackout_locations)
 ```
+
+# Cropping a Vectorized Map
 
 ##### crop the vectorized map to our region of interest (10 points)
 
