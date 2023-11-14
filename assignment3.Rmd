@@ -149,23 +149,31 @@ Typically highways account for a large portion of the night lights observable fr
 
 -   `gis_osm_roads_free_1.gpkg`
 
-### Reading in Road Data with sf
+### Reading in Highway Data
+
+Using `sf` package and `st_read()` to load in the highway data. Additionally, SQL, a language used for storing, manipulating, and retrieving data, was employed to optimize our workflow. The SQL query is stored as query below. The data was then re-projected to match the CRS of the map data EPSG:3083
 
 ```{r}
-roads <- st_read("data/gis_osm_roads_free_1.gpkg/gis_osm_roads_free_1.gpkg")
+# SQL query to aid in the data loading process
+query <- "SELECT * FROM gis_osm_roads_free_1 WHERE fclass='motorway'"
+
+# Loading in the data with the SQL query
+highways <- st_read("data/gis_osm_roads_free_1.gpkg",
+                    query = query,
+                    quiet = TRUE)
+
+# Re-projecting CRS
+highways <- highways %>% st_transform(3083)
 ```
 
-The roads geopackage includes data on roads other than highways. However, we can avoid reading in data we don't need by taking advantage of `st_read`'s ability to subset using a SQL query.\
-
--   define SQL query\
--   load just highway data from geopackage using `st_read`\
--   reproject data to EPSG:3083\
--   identify areas within 200m of all highways using `st_buffer`\
+-   \
+    identify areas within 200m of all highways using `st_buffer`\
     -   hint: `st_buffer` produces undissolved buffers, use `st_union` to dissolve them\
 -   find areas that experienced blackouts that are further than 200m from a highway
 
-`query <- "SELECT * FROM gis_osm_roads_free_1 WHERE fclass='motorway'"`\
-`highways <- st_read("data/gis_osm_roads_free_1.gpkg", query = query)`
+### Creating a Buffer
+
+Using `st_buffer` to create an undissolved area within 200 m of all highways
 
 ```{r include=TRUE}
 
@@ -177,22 +185,30 @@ The roads geopackage includes data on roads other than highways. However, we can
 
 ### Buildings Data
 
-We can also obtain building data from OpenStreetMap. We again downloaded from Geofabrick and prepared a GeoPackage containing only houses in the Houston metropolitan area.
+We can also obtain building data from OpenStreetMap. We downloaded from Geofabrick and prepared a GeoPackage containing only houses in the Houston metropolitan area.
 
 -   `gis_osm_buildings_a_free_1.gpkg`
 
-### Reading in Buildings Data with sf
+### Reading in Buildings Data with sf with SQL
 
 ```{r}
-houses <- st_read("data/gis_osm_buildings_a_free_1.gpkg/gis_osm_buildings_a_free_1.gpkg")
+# SQL Query to aid in data loading process
+building_query <- "SELECT *
+FROM gis_osm_buildings_a_free_1
+WHERE (type IS NULL AND name IS NULL)
+OR type in ('residential', 'apartments', 'house', 'static_caravan', 'detached')"
+
+# Loading in the building data with the query
+buildings <- st_read("data/gis_osm_buildings_a_free_1.gpkg",
+                     query = building_query,
+                     quiet = TRUE)
+
+# Re-projecting the dataset to match map
+
 ```
 
 -   load buildings dataset using `st_read` and the following SQL query to select only residential buildings\
 -   hint: reproject data to EPSG:3083
-
-`SELECT *`  `FROM gis_osm_buildings_a_free_1`\
-`WHERE (type IS NULL AND name IS NULL)`\
-`OR type in ('residential', 'apartments', 'house', 'static_caravan', 'detached')`
 
 ### Re-projecting CRS  
 
@@ -226,16 +242,28 @@ The geodatabase contains a layer holding the geometry information, separate from
 ### Read in Socioeconomic Data with sf
 
 ```{r}
+# Loading geometry data
 socioeconomic <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "ACS_2019_5YR_TRACT_48_TEXAS")  
 
-income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME")
+# Loading income data and renaming the columns
+income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME") %>%
+  dplyr::select(GEIOD, B19013e1) %>% 
+  mutate(GEOID_Data = GEOID,
+         median_income = B19013e1)
 ```
 
 -   use `st_read()` to load the geodatabase layers\
+
 -   geometries are stored in the `ACS_2019_5YR_TRACT_48_TEXAS` layer\
+
 -   income data is stored in the `X19_INCOME` layer\
+
 -   select the median income field `B19013e1`\
+
 -   hint: reproject data to EPSG:3083\
+    Re-projecting CRS
+
+    ## Re-projecting CRS  
 
 ```{r include=TRUE}
 
