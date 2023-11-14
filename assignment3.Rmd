@@ -43,14 +43,12 @@ Below is an outline of the steps you should consider taking to achieve the assig
 
 ```{r}
 # Reading in Libraries
-
 library(tidyverse)
 library(sf)
 library(raster)
 library(tmap)
 library(terra)
 library(stars)
-library(here)
 ```
 
 # Finding Locations of Blackouts
@@ -76,7 +74,6 @@ Reading in night lights tiles using `stars`:
 
 ```{r}
 # Reading in the night light tif files
-
 VIIRS_05_07 <- read_stars("data/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif")
 VIIRS_06_07 <- read_stars("data/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")
 VIIRS_05_16 <- read_stars("data/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
@@ -188,7 +185,7 @@ Using `sf` package and `st_read()` to load in the highway data. Additionally, SQ
 
 ```{r}
 # SQL query to aid in the data loading process
-query <- "SELECT * FROM gis_osm_roads_free_1 WHERE fclass='motorway'"
+query <- "SELECT* FROM gis_osm_roads_free_1 WHERE fclass='motorway'"
 
 # Loading in the data with the SQL query
 highways <- st_read("data/gis_osm_roads_free_1.gpkg",
@@ -204,7 +201,13 @@ highways <- highways %>% st_transform(3083)
 Using `st_buffer` to create an undissolved area within 200 m of all highways and `st_union` to dissolve the buffers.
 
 ```{r include=TRUE}
+# Creating a 200 m buffer and dissolving it as a single object
+highway_buffer <- st_buffer(highways, dist = 200) 
+  
+highway_buffer <- st_union(highway_buffer)
 
+# identifying homes boardering the buffer and beyond
+hb_boundary_plus <- st_within(cropped_houston_blackout, highway_buffer)
 ```
 
 # Finding Homes Impacted by Blackouts
@@ -223,7 +226,7 @@ Using `st_read` and SQL query to select only residential buildings to then re-pr
 
 ```{r}
 # SQL Query to aid in data loading process
-building_query <- "SELECT *
+building_query <- "SELECT*
 FROM gis_osm_buildings_a_free_1
 WHERE (type IS NULL AND name IS NULL)
 OR type in ('residential', 'apartments', 'house', 'static_caravan', 'detached')"
@@ -241,11 +244,21 @@ buildings <- buildings %>% st_transform(3083)
 
 ##### find homes in blackout areas (20 points)
 
+Using the
+
 -   filter to homes within blackout areas\
+
 -   count number of impacted homes
 
-```{r include=TRUE}
+    **not running**
 
+```{r include=TRUE}
+# Filtering for homes withing the blackout zone
+
+# blackout_buildings <- st_intersects(buildings, hb_boundary_plus)
+blackout_buildings <- buildings[hb_boundary_plus, .pred = st_intersects]
+
+blackout_homes <- nrow(blackout_buildings)
 ```
 
 # Investigating socioeconomic factors
@@ -256,38 +269,28 @@ buildings <- buildings %>% st_transform(3083)
 
 We cannot readily get socioeconomic information for every home, so instead we obtained data from the [U.S. Census Bureau's American Community Survey](https://www.census.gov/programs-surveys/acs) for census tracts in 2019. The *folder* `ACS_2019_5YR_TRACT_48.gdb` is an ArcGIS ["file geodatabase"](https://desktop.arcgis.com/en/arcmap/latest/manage-data/administer-file-gdbs/file-geodatabases.htm), a multi-file proprietary format that's roughly analogous to a GeoPackage file.
 
-You can use `st_layers()` to explore the contents of the geodatabase. Each layer contains a subset of the fields documents in the [ACS metadata](https://www2.census.gov/geo/docs/maps-data/data/tiger/prejoined/ACSMetadata2011.txt).
-
 The geodatabase contains a layer holding the geometry information, separate from the layers holding the ACS attributes. You have to combine the geometry with the attributes to get a feature layer that `sf` can use.
 
 ### Read in Socioeconomic Data with sf
+
+Using `st_read()` to load the geodatabase layers and `st_layers()` to explore the contents of the geodatabase. Each layer contains a subset of the fields documents in the [ACS metadata](https://www2.census.gov/geo/docs/maps-data/data/tiger/prejoined/ACSMetadata2011.txt). Geometries are stored in the `ACS_2019_5YR_TRACT_48_TEXAS` layer, income data is stored in the `X19_INCOME` layer, and the median income field `B19013e1.`
+
+**not fully running**
 
 ```{r}
 # Loading geometry data
 socioeconomic <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "ACS_2019_5YR_TRACT_48_TEXAS")  
 
 # Loading income data and renaming the columns
-income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME") %>%
+income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME")
+  
+# not running
+income <- income %>%
   dplyr::select(GEIOD, B19013e1) %>% 
   mutate(GEOID_Data = GEOID,
          median_income = B19013e1)
-```
 
--   use `st_read()` to load the geodatabase layers\
-
--   geometries are stored in the `ACS_2019_5YR_TRACT_48_TEXAS` layer\
-
--   income data is stored in the `X19_INCOME` layer\
-
--   select the median income field `B19013e1`\
-
--   hint: reproject data to EPSG:3083\
-    Re-projecting CRS
-
-    ## Re-projecting CRS  
-
-```{r include=TRUE}
-
+income <- st_transform(3803)
 ```
 
 ## Census Tracts Effected by Blackouts
@@ -301,7 +304,27 @@ income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME") 
 
 ```{r include=TRUE}
 
+# Combining the data to region of interest
+census_income <- left_join(socioeconomic, income) %>% 
+  st_transform(3083)
 
+# Re=projecting CRS
+houston <- houston %>% 
+  st_transform(3083)
+
+# Cropping the data 
+cropped_income <- cropped_income[houston, .pred = st_intersects]
+
+# Census tracts that experienced blackout
+blackout_census <- cropped_income[blackout_buildings,] %>% 
+  mutate(blackout = 'yes')
+
+# Combining Cropped datums
+blackout_combined <- full_join(as.data.frame(cropped_income), as.data.frame(blackout_census))
+
+blackout_combined$blackout[is.na(blackout_combined$blackout)] <- "no"
+
+no_blackout <- st_as_sf(blackout_combined[!grepl("yes",blackout_combined$blackout),])
 ```
 
 ## Census Tract Incomes vs Blackout Impacts
