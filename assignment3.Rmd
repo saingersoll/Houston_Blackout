@@ -261,7 +261,7 @@ blackout_buildings <- buildings[hb_boundary_plus, .pred = st_intersects]
 blackout_homes <- nrow(blackout_buildings)
 ```
 
-# Investigating socioeconomic factors
+# Investigating Socioeconomic Factors
 
 ##### load ACS data (10 points)
 
@@ -301,6 +301,7 @@ income <- st_transform(3803)
 -   hint: make sure to join by geometry ID\
 -   spatially join census tract data with buildings determined to be impacted by blackouts\
 -   find which census tracts had blackouts\
+    **psuedocode need to test once upper chunks run**
 
 ```{r include=TRUE}
 
@@ -334,3 +335,17 @@ no_blackout <- st_as_sf(blackout_combined[!grepl("yes",blackout_combined$blackou
 -   create a map of median income by census tract, designating which tracts had blackouts\
 -   plot the distribution of income in impacted and unimpacted tracts
 -   write approx. 100 words summarizing your results and discussing any limitations to this study
+
+```{r}
+tmap_mode('plot')
+
+#Create a map of median income by census tract, designating which tracts had blackouts
+tm_shape(cropped_income) + 
+  tm_polygons("median_income", 
+          title = "Median Income",
+          palette = "magma") +
+  tm_shape(blackout_census) +
+  tm_dots() +
+  tm_layout(title = "Median Income by Census Tracts Effected by Blackouts")
+
+```
