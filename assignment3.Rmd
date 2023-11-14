@@ -346,6 +346,6 @@ tm_shape(cropped_income) +
           palette = "magma") +
   tm_shape(blackout_census) +
   tm_dots() +
-  tm_layout(title = "Median Income by Census Tracts Effected by Blackouts")
+  tm_layout(title = "Median Census Tract Income in Houston Effected by Blackouts")
 
 ```
