@@ -121,6 +121,9 @@ To vectorize the blackout mask, apply `st_as_sf()` and correct invalid geometrie
 
 vector_blackout_locations <- st_as_sf(blackout_locations) %>% 
   st_make_valid(vector_blackout_locations)
+
+# Displays CRS of vector data
+glimpse(crs(vector_blackout_locations))
 ```
 
 # Cropping a Vectorized Map for Region of Interest
@@ -131,10 +134,40 @@ The Houston metropolitan area was initially defined using the following coordina
 
 `(-96.5, 29), (-96.5, 30.5), (-94.5, 30.5), (-94.5, 29)`
 
-These coordinates were then turned into a polygon using `st_polygon` and further converted into a simple feature collection (sfc) using `st_sfc()`. The CRS of this sfc was then converted to match the map to perform the crop. The cropped blackout region of interest was re-projected to EPSG:3083 (NAD83 / Texas Centric Albers Equal Area).
+These coordinates were then turned into a polygon using `st_polygon` and further converted into a simple feature collection (sfc) using `st_sfc()`. The CRS of this sfc was then converted to match the map to perform the crop.
+
+## Special Feature Collection
 
 ```{r include=TRUE}
+# Defining the Region of Interest
+houston <- st_polygon(list(rbind(c(-96.5, 29),
+                                 c(-96.5, 30.5),
+                                 c(-94.5, 30.5),
+                                 c(-96.5, 29))))
 
+# Creating a sfc and assigning the CRS to match the vector blackout data
+houston <- st_sfc(houston) %>% 
+  st_set_crs(4326)
+
+# Confirms last step was successful
+glimpse(crs(houston))
+```
+
+## Making a Mask
+
+A cropped version of the blackout map was created using `st_interects` , this mask of the region of interest was then re-projected to EPSG:3083 (NAD83 / Texas Centric Albers Equal Area).
+
+```{r}
+# cropping blackout locations to the houston dimensions
+houston_blackout <- st_intersects(vector_blackout_locations,
+                                   houston,
+                                   sparse = FALSE)
+
+cropped_houston_blackout <- vector_blackout_locations[houston_blackout,]
+
+# Re-projecting to match the maps
+cropped_houston_blackout <- cropped_houston_blackout %>% 
+  st_transform(3083)
 ```
 
 # Excluding Highways from the Blackout Map
@@ -166,14 +199,9 @@ highways <- st_read("data/gis_osm_roads_free_1.gpkg",
 highways <- highways %>% st_transform(3083)
 ```
 
--   \
-    identify areas within 200m of all highways using `st_buffer`\
-    -   hint: `st_buffer` produces undissolved buffers, use `st_union` to dissolve them\
--   find areas that experienced blackouts that are further than 200m from a highway
-
 ### Creating a Buffer
 
-Using `st_buffer` to create an undissolved area within 200 m of all highways
+Using `st_buffer` to create an undissolved area within 200 m of all highways and `st_union` to dissolve the buffers.
 
 ```{r include=TRUE}
 
