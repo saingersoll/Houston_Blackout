@@ -191,6 +191,8 @@ We can also obtain building data from OpenStreetMap. We downloaded from Geofabri
 
 ### Reading in Buildings Data with sf with SQL
 
+Using `st_read` and SQL query to select only residential buildings to then re-project the CRS to EPSG:3083.
+
 ```{r}
 # SQL Query to aid in data loading process
 building_query <- "SELECT *
@@ -204,16 +206,7 @@ buildings <- st_read("data/gis_osm_buildings_a_free_1.gpkg",
                      quiet = TRUE)
 
 # Re-projecting the dataset to match map
-
-```
-
--   load buildings dataset using `st_read` and the following SQL query to select only residential buildings\
--   hint: reproject data to EPSG:3083
-
-### Re-projecting CRS  
-
-```{r include=TRUE}
-
+buildings <- buildings %>% st_transform(3083)
 ```
 
 ## Quantifying Homes Within Blackout Areas 
