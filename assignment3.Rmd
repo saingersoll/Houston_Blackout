@@ -154,6 +154,8 @@ glimpse(crs(houston))
 
 A cropped version of the blackout map was created using `st_interects` , this mask of the region of interest was then re-projected to EPSG:3083 (NAD83 / Texas Centric Albers Equal Area).
 
+**Maybe st_intersection**
+
 ```{r}
 # cropping blackout locations to the houston dimensions
 houston_blackout <- st_intersects(vector_blackout_locations,
@@ -200,14 +202,19 @@ highways <- highways %>% st_transform(3083)
 
 Using `st_buffer` to create an undissolved area within 200 m of all highways and `st_union` to dissolve the buffers.
 
+**st_intersects vs st_difference vs st_within**
+
+The current output is a "sparse geometry binary predicate list"
+
 ```{r include=TRUE}
 # Creating a 200 m buffer and dissolving it as a single object
 highway_buffer <- st_buffer(highways, dist = 200) 
   
 highway_buffer <- st_union(highway_buffer)
 
-# identifying homes boardering the buffer and beyond
-hb_boundary_plus <- st_within(cropped_houston_blackout, highway_buffer)
+# identifying homes boardering the buffer and within the buffer
+houston_blackout_highways <- st_intersection( highway_buffer, cropped_houston_blackout)
+
 ```
 
 # Finding Homes Impacted by Blackouts
@@ -240,7 +247,7 @@ buildings <- st_read("data/gis_osm_buildings_a_free_1.gpkg",
 buildings <- buildings %>% st_transform(3083)
 ```
 
-## Quantifying Homes Within Blackout Areas 
+## Quantifying Homes Within Blackout Areas
 
 ##### find homes in blackout areas (20 points)
 
@@ -256,9 +263,11 @@ Using the
 # Filtering for homes withing the blackout zone
 
 # blackout_buildings <- st_intersects(buildings, hb_boundary_plus)
-blackout_buildings <- buildings[hb_boundary_plus, .pred = st_intersects]
+houston_blackout_buildings <- st_intersection(buildings, houston_blackout_highways)
 
-blackout_homes <- nrow(blackout_buildings)
+# the number of homes impacted
+houston_blackout_homes <- nrow(houston_blackout_buildings)
+houston_blackout_homes
 ```
 
 # Investigating Socioeconomic Factors
@@ -282,11 +291,8 @@ Using `st_read()` to load the geodatabase layers and `st_layers()` to explore th
 socioeconomic <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "ACS_2019_5YR_TRACT_48_TEXAS")  
 
 # Loading income data and renaming the columns
-income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME")
-  
-# not running
-income <- income %>%
-  dplyr::select(GEIOD, B19013e1) %>% 
+income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME") %>% 
+  dplyr::select(c('GEIOD', 'B19013e1'))%>% 
   mutate(GEOID_Data = GEOID,
          median_income = B19013e1)
 
