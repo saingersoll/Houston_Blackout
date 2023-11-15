@@ -292,11 +292,12 @@ socioeconomic <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "ACS_20
 
 # Loading income data and renaming the columns
 income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME") %>% 
-  dplyr::select(c('GEIOD', 'B19013e1'))%>% 
+  mutate(cols = pick('GEIOD', 'B19013e1')) %>% 
   mutate(GEOID_Data = GEOID,
          median_income = B19013e1)
 
 income <- st_transform(3803)
+
 ```
 
 ## Census Tracts Effected by Blackouts
@@ -320,18 +321,18 @@ houston <- houston %>%
   st_transform(3083)
 
 # Cropping the data 
-cropped_income <- cropped_income[houston, .pred = st_intersects]
+houston_income <- census_income[houston, .predicate = st_intersects]
 
 # Census tracts that experienced blackout
-blackout_census <- cropped_income[blackout_buildings,] %>% 
+blackout_census <- houston_income[houston_blackout_buildings,] %>% 
   mutate(blackout = 'yes')
 
 # Combining Cropped datums
-blackout_combined <- full_join(as.data.frame(cropped_income), as.data.frame(blackout_census))
+houston_blackout_combined <- full_join(as.data.frame(houston_income), as.data.frame(blackout_census))
 
-blackout_combined$blackout[is.na(blackout_combined$blackout)] <- "no"
+houston_blackout_combined$blackout[is.na(houston_blackout_combined$blackout)] <- "no"
 
-no_blackout <- st_as_sf(blackout_combined[!grepl("yes",blackout_combined$blackout),])
+no_blackout <- st_as_sf(houston_blackout_combined[!grepl("yes",houston_blackout_combined$blackout),])
 ```
 
 ## Census Tract Incomes vs Blackout Impacts
@@ -346,8 +347,8 @@ no_blackout <- st_as_sf(blackout_combined[!grepl("yes",blackout_combined$blackou
 tmap_mode('plot')
 
 #Create a map of median income by census tract, designating which tracts had blackouts
-tm_shape(cropped_income) + 
-  tm_polygons("median_income", 
+tm_shape(houston_income) + 
+  tm_polygons(fill = "median_income", 
           title = "Median Income",
           palette = "magma") +
   tm_shape(blackout_census) +
