@@ -348,7 +348,7 @@ tmap_mode('plot')
 
 #Create a map of median income by census tract, designating which tracts had blackouts
 tm_shape(houston_income) + 
-  tm_polygons(fill = "median_income", 
+  tm_polygons(fill = "B19013e1", 
           title = "Median Income",
           palette = "magma") +
   tm_shape(blackout_census) +
