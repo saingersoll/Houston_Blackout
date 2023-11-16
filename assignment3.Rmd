@@ -289,10 +289,10 @@ Using the `st_intersects` function to filter for homes beyond the buffer that we
 
 ```{r include=TRUE}
 # Filtering for homes beyond the buffer zone
-houston_blackout_buildings <- st_intersection(houston_blackout_highways, buildings) 
+houston_blackout_homes <- st_intersection(houston_blackout_highways, buildings) 
 # the number of homes impacted
-houston_blackout_homes <- nrow(houston_blackout_buildings)
-houston_blackout_homes
+nrow(houston_blackout_homes)
+
 ```
 
 Preliminary visualization of Houston Homes effected by the blackout
@@ -355,7 +355,7 @@ blackout_census <- census_income[houston_blackout_buildings,] %>%
 # Combining Cropped datums
 #houston_blackout_combined <- full_join(as.data.frame(census_income), as.data.frame(blackout_census))
 
-houston_blackout_combined$blackout[is.na(houston_blackout_combined$blackout)] <- "no"
+blackout_census$blackout[is.na(houston_blackout_combined$blackout)] <- "no"
 
 no_blackout <- st_as_sf(houston_blackout_combined[!grepl("yes",houston_blackout_combined$blackout),])
 ```
