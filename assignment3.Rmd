@@ -249,8 +249,13 @@ buildings <- st_read("data/gis_osm_buildings_a_free_1.gpkg",
                      quiet = TRUE)
 
 # Re-projecting the dataset to match map
-buildings <- buildings %>% st_transform(3083) %>% 
-  st_make_valid(buildings)
+buildings <- buildings %>% st_transform(3083)
+```
+
+```{r}
+
+buildings <- buildings %>%
+  st_transform('EPSG:3083')
 ```
 
 ## Quantifying Homes Within Blackout Areas
@@ -303,10 +308,6 @@ income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME") 
   dplyr::select(GEOID, B19013e1) %>% 
   rename(GEOID_Data = GEOID,
          median_income = B19013e1)
-
-
-socio_income  <- left_join(socioeconomic, income) %>%
-  st_transform('EPSG:3083') 
 ```
 
 ## Census Tracts Effected by Blackouts
@@ -322,15 +323,15 @@ socio_income  <- left_join(socioeconomic, income) %>%
 ```{r include=TRUE}
 
 # Combining the data to region of interest
-census_income <- left_join(socioeconomic, income) %>% 
-  st_transform(3083)
+census_income <- left_join(socioeconomic, income) %>%
+  st_transform('EPSG:3083') 
 
 # Re=projecting CRS
 houston <- houston %>% 
   st_transform(3083)
 
 # Cropping the data 
-houston_income <- census_income[houston, .predicate = st_intersects]
+houston_income <- census_income[houston,]
 
 # Census tracts that experienced blackout
 blackout_census <- houston_income[houston_blackout_buildings,] %>% 
