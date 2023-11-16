@@ -155,14 +155,18 @@ A cropped version of the blackout map was created using `st_difference` , this m
 
 ```{r}
 # cropping blackout locations to the houston dimensions
-houston_blackout <- st_difference(vector_blackout_locations, houston)
-
-cropped_houston_blackout <- vector_blackout_locations[houston_blackout,]
+# this slices the vector_blackout_locations to match houston data, everything on the line is sliced
+# This provides data where Houston is masked
+houston_blackout_mask <- st_difference(vector_blackout_locations, houston)
 
 # Re-projecting to match the maps
-cropped_houston_blackout <- cropped_houston_blackout %>% 
+houston_blackout_mask <- houston_blackout_mask %>% 
   st_transform(3083) %>% 
-  st_make_valid(cropped_houston_blackout)
+  st_make_valid(houston_blackout_mask)
+```
+
+```{r}
+plot(houston_blackout_mask)
 ```
 
 # Excluding Highways from the Blackout Map
@@ -203,7 +207,8 @@ Using `st_buffer` to create an undissolved area within 200 m of all highways and
 ```{r include=TRUE}
 # Creating a 200 m buffer and dissolving it as a single object
 highway_buffer <- st_buffer(highways, dist = 200) 
-  
+
+# combines the geometries within the buffer as one geometric polygon
 highway_buffer <- st_union(highway_buffer)
 
 ```
@@ -217,9 +222,26 @@ plot(highway_buffer)
 Now to combine the cropped vector blackout data of Houston with the highway buffer we created above using `st_difference`.
 
 ```{r}
+houston_blackout_highways <
+```
+
+We expect a few observations to be removed, but to be relatively the same length.
+
+```{r}
 # identifying homes boardering the buffer and beyond the buffer
-houston_blackout_highways <- st_difference(cropped_houston_blackout, highway_buffer) %>% 
+# takes blackout data 
+houston_blackout_highways <- st_difference(houston_blackout_mask, highway_buffer) %>% 
   st_make_valid(houston_blackout_highways)
+#%>% 
+ # st_make_valid(houston_blackout_highways)
+
+plot(houston_blackout_highways)
+```
+
+```{r}
+houston_blackout_highways3 <- houston_blackout_mask[highway_buffer,] 
+
+plot(houston_blackout_highways3)
 ```
 
 # Finding Homes Impacted by Blackouts
@@ -247,13 +269,10 @@ OR type in ('residential', 'apartments', 'house', 'static_caravan', 'detached')"
 buildings <- st_read("data/gis_osm_buildings_a_free_1.gpkg",
                      query = building_query,
                      quiet = TRUE)
-
-# Re-projecting the dataset to match map
-buildings <- buildings %>% st_transform(3083)
 ```
 
 ```{r}
-
+# Re-projecting the dataset to match map
 buildings <- buildings %>%
   st_transform('EPSG:3083')
 ```
@@ -262,18 +281,15 @@ buildings <- buildings %>%
 
 ##### find homes in blackout areas (20 points)
 
-Using the
+Using the `st_intersects` function to filter for homes beyond the buffer that were effected by blackouts.
 
--   filter to homes within blackout areas \
+-   filter to homes within blackout areas\
 
--   count number of impacted homes
-
-    **not running**
+-   count number of impacted homes -\> should be closure to 7k
 
 ```{r include=TRUE}
 # Filtering for homes beyond the buffer zone
-houston_blackout_buildings <- buildings[houston_blackout_highways,]
-
+houston_blackout_buildings <- st_intersection(houston_blackout_highways, buildings) 
 # the number of homes impacted
 houston_blackout_homes <- nrow(houston_blackout_buildings)
 houston_blackout_homes
@@ -282,7 +298,7 @@ houston_blackout_homes
 Preliminary visualization of Houston Homes effected by the blackout
 
 ```{r}
-plot(houston_blackout_buildings)
+plot(houston_blackout_homes)
 ```
 
 # Investigating Socioeconomic Factors
