@@ -333,28 +333,27 @@ income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME") 
 -   join the income data to the census tract geometries\
 -   hint: make sure to join by geometry ID\
 -   spatially join census tract data with buildings determined to be impacted by blackouts\
--   find which census tracts had blackouts\
-    **psuedocode need to test once upper chunks run**
+-   find which census tracts had blackouts
 
 ```{r include=TRUE}
 
 # Combining the data to region of interest
-census_income <- left_join(socioeconomic, income) %>%
+census_income <- left_join(socioeconomic, income, by = "GEOID_Data") %>%
   st_transform('EPSG:3083') 
 
 # Re=projecting CRS
-houston <- houston %>% 
-  st_transform(3083)
+#houston <- houston %>% 
+  #st_transform(3083)
 
 # Cropping the data 
-houston_income <- census_income[houston,]
+#houston_income <- census_income[houston,]
 
 # Census tracts that experienced blackout
-blackout_census <- houston_income[houston_blackout_buildings,] %>% 
+blackout_census <- census_income[houston_blackout_buildings,] %>% 
   mutate(blackout = 'yes')
 
 # Combining Cropped datums
-houston_blackout_combined <- full_join(as.data.frame(houston_income), as.data.frame(blackout_census))
+#houston_blackout_combined <- full_join(as.data.frame(census_income), as.data.frame(blackout_census))
 
 houston_blackout_combined$blackout[is.na(houston_blackout_combined$blackout)] <- "no"
 
