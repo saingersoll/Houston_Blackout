@@ -264,7 +264,7 @@ buildings <- buildings %>%
 
 Using the
 
--   filter to homes within blackout areas\
+-   filter to homes within blackout areas \
 
 -   count number of impacted homes
 
