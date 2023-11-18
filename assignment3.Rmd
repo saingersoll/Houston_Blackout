@@ -49,6 +49,7 @@ library(raster)
 library(tmap)
 library(terra)
 library(stars)
+library(patchwork)
 ```
 
 # Finding Locations of Blackouts
@@ -221,10 +222,6 @@ plot(highway_buffer)
 
 Now to combine the cropped vector blackout data of Houston with the highway buffer we created above using `st_difference`.
 
-```{r}
-houston_blackout_highways <
-```
-
 We expect a few observations to be removed, but to be relatively the same length.
 
 ```{r}
@@ -283,9 +280,15 @@ Using the `st_intersects` function to filter for homes beyond the buffer that we
 
 ```{r include=TRUE}
 # Filtering for homes beyond the buffer zone
-houston_blackout_homes <- st_difference(houston_blackout_highways, buildings) 
+#houston_blackout_homes <- houston_blackout_highways[ buildings,] 
 # the number of homes impacted
-nrow(houston_blackout_homes)
+#nrow(houston_blackout_homes)
+
+
+# Filtering for homes beyond the buffer zone
+houston_blackout_homes1 <- st_intersection(houston_blackout_highways, buildings) 
+# the number of homes impacted
+nrow(houston_blackout_homes1)
 
 ```
 
@@ -336,20 +339,21 @@ census_income <- left_join(socioeconomic, income, by = "GEOID_Data") %>%
   st_transform('EPSG:3083') 
 
 # Re=projecting CRS
-#houston <- houston %>% 
-  #st_transform(3083)
+houston <- houston %>% 
+  st_transform(3083)
 
 # Cropping the data 
-#houston_income <- census_income[houston,]
+houston_income <- census_income[houston,] %>% 
+  mutate(geometry = houston_income$Shape)
 
 # Census tracts that experienced blackout
-blackout_census <- census_income[houston_blackout_buildings,] %>% 
+blackout_census <- houston_blackout_homes1[houston_income,] %>% 
   mutate(blackout = 'yes')
 
 # Combining Cropped datums
-#houston_blackout_combined <- full_join(as.data.frame(census_income), as.data.frame(blackout_census))
+houston_blackout_combined <- full_join(as.data.frame(houston_income), as.data.frame(blackout_census))
 
-blackout_census$blackout[is.na(houston_blackout_combined$blackout)] <- "no"
+houston_blackout_combined$blackout[is.na(houston_blackout_combined$blackout)] <- "no"
 
 no_blackout <- st_as_sf(houston_blackout_combined[!grepl("yes",houston_blackout_combined$blackout),])
 ```
@@ -359,19 +363,95 @@ no_blackout <- st_as_sf(houston_blackout_combined[!grepl("yes",houston_blackout_
 ##### compare incomes of impacted tracts to unimpacted tracts (10 points)
 
 -   create a map of median income by census tract, designating which tracts had blackouts\
--   plot the distribution of income in impacted and unimpacted tracts
--   write approx. 100 words summarizing your results and discussing any limitations to this study
+
 
 ```{r}
 tmap_mode('plot')
 
 #Create a map of median income by census tract, designating which tracts had blackouts
 tm_shape(houston_income) + 
-  tm_polygons(fill = "B19013e1", 
+  tm_polygons(fill = "median_income", 
           title = "Median Income",
           palette = "magma") +
   tm_shape(blackout_census) +
-  tm_dots() +
-  tm_layout(title = "Median Census Tract Income in Houston Effected by Blackouts")
+  tm_scale_bar(position = c('right','bottom')) + 
+  tm_compass( type = 'rose', 
+              lw = 0.,
+              size = 5) +
+  tm_bubbles(size = 1,
+            # col = 'black',
+             alpha = 0.5,
+             fill_alpha.scale = 'black') +
+  tm_title(text = "Median Census Tract Income in Houston Effected by Blackouts", size = 1) 
 
 ```
+
+
+```{r}
+#census tracts with blackouts
+blackout_map <-  tm_shape(houston_income) + 
+  tm_polygons(fill = "median_income", 
+          title = "Median Income ($)",
+          palette = "magma") +
+  tm_borders() +
+  tm_title(text = "Median income for census tracts that had blackouts") +
+   tm_scalebar(position = c('right','bottom')) + 
+  tm_compass( type = 'rose', 
+              lw = 0.,
+              size = 5) 
+blackout_map
+#census tracts with no blackouts   
+no_blackout_map <-  tm_shape(no_blackout) + 
+  tm_polygons(fill = "median_income", 
+          title = "Median Income ($)",
+          palette = "magma") +
+  tm_borders() +
+  tm_title(text = "Median income for census tracts that did not have blackouts") +
+   tm_scalebar(position = c('right','bottom')) + 
+  tm_compass( type = 'rose', 
+              lw = 0.,
+              size = 5) 
+no_blackout_map
+  
+tmap_arrange(blackout_map, no_blackout_map)
+```
+
+
+-   plot the distribution of income in impacted and unimpacted tracts
+
+```{r}
+#side by side histogram. I'm not sure how to 
+par(mfrow=c(1,2))
+#histogram of the distribution of income in impacted tracts
+median_income_blackout <- (houston_income$median_income)
+hist(median_income_blackout,
+main="Median Income for Tracts Impacted by Blackout",
+cex.main = .75,
+xlab="Median Income ($)",
+ylab="Number of Homes",
+col="hotpink",
+n = 30)
+#histogram of the distribution of income in unimpacted tracts
+median_income_no_blackout <- (no_blackout$median_income)
+hist(median_income_no_blackout,
+main="Median Income for Tracts Not Impacted by Blackout",
+cex.main = .75,
+xlab="Median Income ($)",
+ylab="Number of Homes",
+col="pink",
+n = 30)
+
+
+hist <- median_income_blackout + median_income_no_blackout
+hist
+```
+
+```{r}
+ggplot(data = houston_blackout_combined, aes(x = blackout, y = median_income, col = blackout)) +
+  geom_jitter(width = 0.1) +
+  geom_boxplot(alpha = 0.5) +
+  labs(x = "Blackout", y = "Median Income", title = "Houston Power Outage Compared to Median Income Distribution")
+```
+
+
+-   write approx. 100 words summarizing your results and discussing any limitations to this study
