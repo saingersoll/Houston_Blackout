@@ -154,12 +154,10 @@ glimpse(crs(houston))
 
 ## Making a Mask
 
-A cropped version of the blackout map was created using `st_difference` , this mask of the region of interest was then re-projected to EPSG:3083 (NAD83 / Texas Centric Albers Equal Area).
+A cropped version of the blackout map was created using `st_crop` , this mask of the region of interest was then re-projected to EPSG:3083 (NAD83 / Texas Centric Albers Equal Area).
 
 ```{r}
 # cropping blackout locations to the houston dimensions
-# this slices the vector_blackout_locations to match houston data, everything on the line is sliced
-# This provides data where Houston is masked
 houston_blackout_mask <- st_crop(vector_blackout_locations, houston)
 
 # Re-projecting to match the maps
@@ -186,7 +184,7 @@ Typically highways account for a large portion of the night lights observable fr
 
 ### Reading in Highway Data
 
-Using `sf` package and `st_read()` to load in the highway data. Additionally, SQL, a language used for storing, manipulating, and retrieving data, was employed to optimize our workflow. The SQL query is stored as query below. The data was then re-projected to match the CRS of the map data EPSG:3083
+Using `sf` package and `st_read()` to load in the highway data. Additionally, SQL, a language used for storing, manipulating, and retrieving data, was employed to optimize our workflow. A SQL query is describes the mechanism in which the data will be read in. The SQL query is stored as query below. The data was then re-projected to match the CRS of the map data EPSG:3083
 
 ```{r}
 # SQL query to aid in the data loading process
@@ -229,10 +227,7 @@ We expect a few observations to be removed, but to be relatively the same length
 
 ```{r}
 # identifying homes boardering the buffer and beyond the buffer
-# takes blackout data 
 houston_blackout_highways <- st_difference(houston_blackout_mask, highway_buffer)
-#%>% 
- # st_make_valid(houston_blackout_highways)
 
 plot(houston_blackout_highways)
 ```
@@ -277,12 +272,7 @@ buildings <- buildings %>%
 Using the `st_intersection` function to filter for homes beyond the buffer that were effected by blackouts to estimate the number of homes effected by the blackout to be 168,873.
 
 ```{r include=TRUE}
-# Filtering for homes beyond the buffer zone
-#houston_blackout_homes <- houston_blackout_highways[ buildings,] 
-# the number of homes impacted
-#nrow(houston_blackout_homes)
-
-# Filtering for homes beyond the buffer zone
+# Filtering for homes beyond the buffer zone affected by the blackouts
 houston_blackout_homes <- st_intersection(buildings, houston_blackout_highways)
 # the number of homes impacted
 nrow(houston_blackout_homes)
@@ -310,10 +300,12 @@ Using `st_read()` to load the geodatabase layers and `st_layers()` to explore th
 
 ```{r}
 # Loading geometry data
-socioeconomic <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "ACS_2019_5YR_TRACT_48_TEXAS")  
+socioeconomic <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "ACS_2019_5YR_TRACT_48_TEXAS",
+                         quiet = TRUE)  
 
 # Loading income data and renaming the columns
-income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME") %>%
+income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME",
+                  quiet = TRUE) %>%
   dplyr::select(GEOID, B19013e1) %>% 
   rename(GEOID_Data = GEOID,
          median_income = B19013e1)
@@ -345,13 +337,16 @@ houston_income <- st_crop(census_income, houston)
 blackout_census <- houston_blackout_homes[houston_income,] %>% 
   mutate(blackout = 'yes')
 
-houston_blackout_combined$VNP46A1.A2021038.h08v05.001.2021039064328.tif[is.na(houston_blackout_combined$VNP46A1.A2021038.h08v05.001.2021039064328.tif)] <- "FALSE"
-
 # Combining Cropped datums
 houston_blackout_combined <- st_join(houston_income, blackout_census, left = TRUE)
 
+# Additional check to track impact of blackout
+houston_blackout_combined$VNP46A1.A2021038.h08v05.001.2021039064328.tif[is.na(houston_blackout_combined$VNP46A1.A2021038.h08v05.001.2021039064328.tif)] <- "FALSE"
+
+# labels unaffected areas
 houston_blackout_combined$blackout[is.na(houston_blackout_combined$blackout)] <- "no"
 
+# isolates unaffected areas into data subset
 no_blackout <- st_as_sf(houston_blackout_combined[!grepl("yes",houston_blackout_combined$blackout),])
 ```
 
@@ -389,7 +384,7 @@ tm_shape(houston_income) +
              alpha = 0.5,
              fill_alpha.scale = 'black') +
     tm_scale_bar(position = c('right','bottom')) +
-  tm_title(text = "Median Census Tract Income in Houston Effected by Blackouts", size = 1) 
+  tm_title(text = "Median Census Tract Income in Houston Affected by Blackouts", size = 1) 
 
 ```
 
@@ -422,6 +417,7 @@ no_blackout_map <-  tm_shape(no_blackout) +
               size = 2) 
   
 tmap_arrange(blackout_map, no_blackout_map)
+
 ```
 
 ## Figure 3: Histogram: Median Income Distribution & Examining Blackout vs No Blackouts
@@ -472,6 +468,8 @@ ggplot(data = houston_blackout_combined, aes(x = blackout,
 
 ## Conclusion
 
-During the 2021 February storms in Houston, a number of homes were effected by power outages. As expected, Houston homes in census tract regions with lower median incomes experienced a greater number of blackouts compared to regions with higher median incomes. This census data is limited to the time the census was recorded and does not contain up-to-date socioeconomic information for every household.
+During the 2021 February string of storms in Houston, a number of homes were effected by power outages.
 
-Further limitations to this analysis are the visualizations. The data wrangling process utilized operations that altered the geometry of the data. Objects such as buildings were spliced into pieces when combining the data using `st_difference` and `st_intersection`. These steps were unavoidable because other functions like `st_intersects` did not preserve the datums sf sticky geometries and produce a sparse geometry binary predicate list (sgbp). SGBP are not compatible with the type of mapping exercised above and cannot be made into sf data frames.
+Approximately 168,956 homes were impacted by the blackout that occurred on February 16, 2023. As a result, a variety of individuals were affected by the blackout. An inspection regarding the relationship between Median Income collected from census data and experiencing a blackout. Only 373 homes were unaffected by the blackouts, but a wide distribution of median wealth were inside this categorization. As expected, Houston homes in census tract regions with lower median incomes experienced a greater number of blackouts compared to regions with higher median incomes.
+
+This census data is limited to the time the census was recorded and does not contain up-to-date socioeconomic information for every household. Further limitations to this analysis are the visualizations. The data wrangling process utilized operations that altered the geometry of the data. Objects such as buildings were spliced into pieces when combining the data using `st_difference` and `st_intersection`. These steps were unavoidable because other functions like `st_intersects` did not preserve the datums sf sticky geometries and produce a sparse geometry binary predicate list (sgbp). SGBP are not compatible with the type of mapping exercised above and cannot be made into sf data frames.
