@@ -10,8 +10,6 @@ output:
       toc_float: yes
 ---
 
-**Stylistically, some outputs without print statements and irrelevant outputs -2**
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
