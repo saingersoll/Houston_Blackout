@@ -22,7 +22,7 @@ Using visual aids:
 -   spatial joins
 
 ### About the Data
-##### Night Lights Data
+#### Night Lights Data
 
 The analysis is based on remotely-sensed night lights data, acquired from the [Visible Infrared Imaging Radiometer Suite (VIIRS)](https://en.wikipedia.org/wiki/Visible_Infrared_Imaging_Radiometer_Suite) onboard the Suomi satellite. In particular, you will use the VNP46A1 to detect differences in night lights before and after the storm to identify areas that lost electric power.
 
@@ -37,7 +37,7 @@ VIIRS data is distributed through NASA's [Level-1 and Atmospheric Archive & Dist
 -   `VNP46A1.A2021047.h08v05.001.2021048091106.h5.tif`: tile h08v05, collected on 2021-02-16
 -   `VNP46A1.A2021047.h08v06.001.2021048091105.h5.tif`: tile h08v06, collected on 2021-02-16
 
-### Roads Data
+#### Roads Data
 
 Typically highways account for a large portion of the night lights observable from space (see Google's [Earth at Night](https://earth.google.com/web/@27.44405464,-84.7693044,206.63660162a,8916361.52264659d,35y,0h,0t,0r/data=CiQSIhIgMGY3ZTJkYzdlOGExMTFlNjk5MGQ2ZjgxOGQ2OWE2ZTc)). To minimize falsely identifying areas with reduced traffic as areas without power, we will ignore areas near highways.
 
@@ -45,13 +45,13 @@ Typically highways account for a large portion of the night lights observable fr
 
 -   `gis_osm_roads_free_1.gpkg`
 
-### Buildings Data
+#### Buildings Data
 
 We can also obtain building data from OpenStreetMap. We downloaded from Geofabrick and prepared a GeoPackage containing only houses in the Houston metropolitan area.
 
 -   `gis_osm_buildings_a_free_1.gpkg`
 
-### Socioeconomic Data
+#### Socioeconomic Data
 
 We cannot readily get socioeconomic information for every home, so instead we obtained data from the [U.S. Census Bureau's American Community Survey](https://www.census.gov/programs-surveys/acs) for census tracts in 2019. The *folder* `ACS_2019_5YR_TRACT_48.gdb` is an ArcGIS ["file geodatabase"](https://desktop.arcgis.com/en/arcmap/latest/manage-data/administer-file-gdbs/file-geodatabases.htm), a multi-file proprietary format that's roughly analogous to a GeoPackage file.
 
