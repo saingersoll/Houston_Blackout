@@ -1,5 +1,5 @@
 ---
-title: 'EDS 223: assignment 3'
+title: 'Homes Impacted by the Houston, TX Blackout (2021)'
 author: "Sofia Ingersoll & Heather Childers"
 date: "2022-10-26"
 output:
@@ -22,15 +22,13 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 [^1]: Wikipedia. 2021. "2021 Texas power crisis." Last modified October 2, 2021. <https://en.wikipedia.org/wiki/2021_Texas_power_crisis>.
 
-For this assignment, you are tasked with:\
-- estimating the number of homes in Houston that lost power as a result of the first two storms\
-- investigating if socioeconomic factors are predictors of communities recovery from a power outage
+For this project, we will estimate the number of homes in Houston that lost power as a result of the first two storms and investigate if socioeconomic factors are predictors of communities recovery from a power outage.
 
-Your analysis will be based on remotely-sensed night lights data, acquired from the [Visible Infrared Imaging Radiometer Suite (VIIRS)](https://en.wikipedia.org/wiki/Visible_Infrared_Imaging_Radiometer_Suite) onboard the Suomi satellite. In particular, you will use the VNP46A1 to detect differences in night lights before and after the storm to identify areas that lost electric power.
+Our analysis will be based on remotely-sensed night lights data, acquired from the [Visible Infrared Imaging Radiometer Suite (VIIRS)](https://en.wikipedia.org/wiki/Visible_Infrared_Imaging_Radiometer_Suite) onboard the Suomi satellite. In particular, we will use the VNP46A1 to detect differences in night lights before and after the storm to identify areas that lost electric power.
 
-To determine the number of homes that lost power, you link (spatially join) these areas with [OpenStreetMap](https://www.openstreetmap.org/#map=4/38.01/-95.84) data on buildings and roads.
+To determine the number of homes that lost power, we will link (spatially join) these areas with [OpenStreetMap](https://www.openstreetmap.org/#map=4/38.01/-95.84) data on buildings and roads.
 
-To investigate potential socioeconomic factors that influenced recovery, you will link your analysis with data from the US Census Bureau.
+To investigate potential socioeconomic factors that influenced recovery, we will link our analysis with data from the US Census Bureau.
 
 ##### Learning objectives:
 
@@ -39,9 +37,7 @@ To investigate potential socioeconomic factors that influenced recovery, you wil
 -   simple vector operations\
 -   spatial joins
 
-Below is an outline of the steps you should consider taking to achieve the assignment tasks.
-
-## Assignment
+## Libraries
 
 ```{r}
 # Reading in Libraries
@@ -56,15 +52,11 @@ library(patchwork)
 
 # Finding Locations of Blackouts
 
-##### combine the data (5 points)
-
 ### Night Lights Data
 
 Use NASA's Worldview to explore the data around the day of the storm. There are several days with too much cloud cover to be useful, but 2021-02-07 and 2021-02-16 provide two clear, contrasting images to visualize the extent of the power outage in Texas.
 
 VIIRS data is distributed through NASA's [Level-1 and Atmospheric Archive & Distribution System Distributed Active Archive Center (LAADS DAAC)](https://ladsweb.modaps.eosdis.nasa.gov/). Many NASA Earth data products are distributed in 10x10 degree tiles in sinusoidal equal-area projection. Tiles are identified by their horizontal and vertical position in the grid. Houston lies on the border of tiles h08v05 and h08v06. We therefore need to download two tiles per date.
-
-As you're learning in EDS 220, accessing, downloading, and preparing remote sensing data is a skill in it's own right! To prevent this assignment from being a large data wrangling challenge, we have downloaded and prepped the following files for you to work with, stored in the `VNP46A1` folder.
 
 -   `VNP46A1.A2021038.h08v05.001.2021039064328.h5.tif`: tile h08v05, collected on 2021-02-07
 -   `VNP46A1.A2021038.h08v06.001.2021039064329.h5.tif`: tile h08v06, collected on 2021-02-07
@@ -96,8 +88,6 @@ feb_16 <- st_mosaic(VIIRS_05_16, VIIRS_06_16)
 
 # Making a Mask
 
-##### create a blackout mask (10 points)
-
 To find the change in night-light intensity (presumably) caused by the storm, we must make a mask to conceal the data that experienced a drop less than 200 nW cm^-2^sr^-1^. This reclassification of the difference raster was done assuming that any location that experienced a drop of more than 200 nW cm^-2^sr^-1^ experienced a blackout. All **locations not considered blackout zones** were assigned `NA.`
 
 ```{r include=TRUE}
@@ -112,8 +102,6 @@ blackout_locations[blackout_locations == FALSE] <- NA
 
 # Vectorized Mask
 
-##### vectorize the mask (5 points)
-
 To vectorize the blackout mask, apply `st_as_sf()` and correct invalid geometries by piping `st_make_valid`.
 
 ```{r include=TRUE}
@@ -127,8 +115,6 @@ glimpse(crs(vector_blackout_locations))
 ```
 
 # Cropping a Vectorized Map for Region of Interest
-
-##### crop the vectorized map to our region of interest (10 points)
 
 The Houston metropolitan area was initially defined using the following coordinates:
 
@@ -173,8 +159,6 @@ plot(houston_blackout_mask)
 ```
 
 # Excluding Highways from the Blackout Map
-
-##### exclude highways from blackout mask (10 points)
 
 ### Roads Data
 
@@ -236,8 +220,6 @@ plot(houston_blackout_highways)
 
 # Finding Homes Impacted by Blackouts
 
-##### load buildings data (10 points)
-
 ### Buildings Data
 
 We can also obtain building data from OpenStreetMap. We downloaded from Geofabrick and prepared a GeoPackage containing only houses in the Houston metropolitan area.
@@ -269,11 +251,9 @@ buildings <- buildings %>%
 
 ## Quantifying Homes Within Blackout Areas
 
-##### find homes in blackout areas (20 points)
-
 Using the `st_intersection` function to filter for homes beyond the buffer that were effected by blackouts to estimate the number of homes effected by the blackout to be 168,873.
 
-**-3 st_intersection instead of st_intersects without taking unique values**
+**Need to convert st_intersection to st_intersects**
 
 ```{r include=TRUE}
 # Filtering for homes beyond the buffer zone affected by the blackouts
@@ -289,8 +269,6 @@ plot(houston_blackout_homes$geom)
 ```
 
 # Investigating Socioeconomic Factors
-
-##### load ACS data (10 points)
 
 ### Socioeconomic Data
 
@@ -316,8 +294,6 @@ income <- st_read("data/ACS_2019_5YR_TRACT_48_TEXAS.gdb", layer = "X19_INCOME",
 ```
 
 ## Census Tracts Effected by Blackouts
-
-##### determine which census tracts experienced blackouts (10 points)
 
 -   join the income data to the census tract geometries
 -   hint: make sure to join by geometry ID
@@ -355,8 +331,6 @@ no_blackout <- st_as_sf(houston_blackout_combined[!grepl("yes",houston_blackout_
 ```
 
 ## Census Tract Incomes vs Blackout Impacts
-
-##### compare incomes of impacted tracts to unimpacted tracts (10 points)
 
 ```{r}
 # Tracking blackouts
