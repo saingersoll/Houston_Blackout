@@ -24,11 +24,15 @@ Using visual aids:
 ### About the Data
 #### Night Lights Data
 
-The analysis is based on remotely-sensed night lights data, acquired from the [Visible Infrared Imaging Radiometer Suite (VIIRS)](https://en.wikipedia.org/wiki/Visible_Infrared_Imaging_Radiometer_Suite) onboard the Suomi satellite. In particular, you will use the VNP46A1 to detect differences in night lights before and after the storm to identify areas that lost electric power.
+The analysis is based on remotely-sensed night lights data, acquired from the [Visible Infrared Imaging Radiometer Suite (VIIRS)](https://en.wikipedia.org/wiki/Visible_Infrared_Imaging_Radiometer_Suite) onboard the Suomi satellite[^2]. In particular, you will use the VNP46A1 to detect differences in night lights before and after the storm to identify areas that lost electric power.
+
+[^2]: Earth Science Data Systems, NASA. “Visible Infrared Imaging Radiometer Suite (VIIRS).” NASA, 11 Feb. 2016, <www.earthdata.nasa.gov/learn/find-data/near-real-time/viirs>. 
 
 Use NASA's Worldview to explore the data around the day of the storm. There are several days with too much cloud cover to be useful, but 2021-02-07 and 2021-02-16 provide two clear, contrasting images to visualize the extent of the power outage in Texas.
 
-VIIRS data is distributed through NASA's [Level-1 and Atmospheric Archive & Distribution System Distributed Active Archive Center (LAADS DAAC)](https://ladsweb.modaps.eosdis.nasa.gov/). Many NASA Earth data products are distributed in 10x10 degree tiles in sinusoidal equal-area projection. Tiles are identified by their horizontal and vertical position in the grid. Houston lies on the border of tiles h08v05 and h08v06. We therefore need to download two tiles per date.
+VIIRS data is distributed through NASA's [Level-1 and Atmospheric Archive & Distribution System Distributed Active Archive Center (LAADS DAAC)](https://ladsweb.modaps.eosdis.nasa.gov/)[^3]. Many NASA Earth data products are distributed in 10x10 degree tiles in sinusoidal equal-area projection. Tiles are identified by their horizontal and vertical position in the grid. Houston lies on the border of tiles h08v05 and h08v06. We therefore need to download two tiles per date.
+
+[^3]: “Level-1 and Atmosphere Archive &amp; Distribution System Distributed Active Archive Center - LAADS DAAC.” NASA, <ladsweb.modaps.eosdis.nasa.gov/>.
 
  To prevent this project from being a large data wrangling challenge, this data has been downloaded and prepped as the following files for you to work with, stored in the `VNP46A1` folder.
 
@@ -39,11 +43,18 @@ VIIRS data is distributed through NASA's [Level-1 and Atmospheric Archive & Dist
 
 #### Roads Data
 
-Typically highways account for a large portion of the night lights observable from space (see Google's [Earth at Night](https://earth.google.com/web/@27.44405464,-84.7693044,206.63660162a,8916361.52264659d,35y,0h,0t,0r/data=CiQSIhIgMGY3ZTJkYzdlOGExMTFlNjk5MGQ2ZjgxOGQ2OWE2ZTc)). To minimize falsely identifying areas with reduced traffic as areas without power, we will ignore areas near highways.
+Typically highways account for a large portion of the night lights observable from space (see Google's [Earth at Night](https://earth.google.com/web/@27.44405464,-84.7693044,206.63660162a,8916361.52264659d,35y,0h,0t,0r/data=CiQSIhIgMGY3ZTJkYzdlOGExMTFlNjk5MGQ2ZjgxOGQ2OWE2ZTc))[^4]. To minimize falsely identifying areas with reduced traffic as areas without power, we will ignore areas near highways.
 
-[OpenStreetMap (OSM)](https://planet.openstreetmap.org/) is a collaborative project which creates publicly available geographic data of the world. Ingesting this data into a database where it can be subsetted and processed is a large undertaking. Fortunately, third party companies redistribute OSM data. We used [Geofabrik's download sites](https://download.geofabrik.de/) to retrieve a shapefile of all highways in Texas and prepared a Geopackage (`.gpkg` file) containing just the subset of roads that intersect the Houston metropolitan area. 
+[^4]: Google Earth, Google, <earth.google.com/web/@27.44405464,-84.7693044,206.63660162a,8916361.52264659d,35y,0h,0t,0r/data=CiQSIhIgMGY3ZTJkYzdlOGExMTFlNjk5MGQ2ZjgxOGQ2OWE2ZTc>. 
+
+[OpenStreetMap (OSM)](https://planet.openstreetmap.org/) is a collaborative project which creates publicly available geographic data of the world [^5]. Ingesting this data into a database where it can be subsetted and processed is a large undertaking. Fortunately, third party companies redistribute OSM data. We used [Geofabrik's download sites](https://download.geofabrik.de/) to retrieve a shapefile of all highways in Texas and prepared a Geopackage (`.gpkg` file) containing just the subset of roads that intersect the Houston metropolitan area[^6]. 
+
+[^5]: “Planet OSM.” Index Of /, <planet.openstreetmap.org/>. 
+
+[^6]: “Geofabrik Download Server.” Geofabrik Download Server, download.geofabrik.de/. 
 
 -   `gis_osm_roads_free_1.gpkg`
+
 
 #### Buildings Data
 
@@ -53,9 +64,13 @@ We can also obtain building data from OpenStreetMap. We downloaded from Geofabri
 
 #### Socioeconomic Data
 
-We cannot readily get socioeconomic information for every home, so instead we obtained data from the [U.S. Census Bureau's American Community Survey](https://www.census.gov/programs-surveys/acs) for census tracts in 2019. The *folder* `ACS_2019_5YR_TRACT_48.gdb` is an ArcGIS ["file geodatabase"](https://desktop.arcgis.com/en/arcmap/latest/manage-data/administer-file-gdbs/file-geodatabases.htm), a multi-file proprietary format that's roughly analogous to a GeoPackage file.
+We cannot readily get socioeconomic information for every home, so instead we obtained data from the [U.S. Census Bureau's American Community Survey](https://www.census.gov/programs-surveys/acs) for census tracts in 2019[^7]. The *folder* `ACS_2019_5YR_TRACT_48.gdb` is an ArcGIS ["file geodatabase"](https://desktop.arcgis.com/en/arcmap/latest/manage-data/administer-file-gdbs/file-geodatabases.htm), a multi-file proprietary format that's roughly analogous to a GeoPackage file.
 
-The geodatabase contains a layer holding the geometry information, separate from the layers holding the ACS attributes. We will combine the geometry with the attributes to get a feature layer that `sf` can use. To determine the number of homes that lost power, we will link (spatially join) these areas with [OpenStreetMap](https://www.openstreetmap.org/#map=4/38.01/-95.84) data on buildings and roads.
+[^7]: Bureau, US Census. “American Community Survey (ACS).” Census.Gov, 30 Nov. 2023, <www.census.gov/programs-surveys/acs>. 
+
+The geodatabase contains a layer holding the geometry information, separate from the layers holding the ACS attributes. We will combine the geometry with the attributes to get a feature layer that `sf` can use. To determine the number of homes that lost power, we will link (spatially join) these areas with [OpenStreetMap](https://www.openstreetmap.org/#map=4/38.01/-95.84) data on buildings and roads[^8].
+
+[^8]: OpenStreetMap, www.openstreetmap.org/#map=4/38.01/-95.84. 
 
 **Note:** the data associated with this project is too large to include in the GitHub repo. Instead, download data from [here](https://drive.google.com/file/d/1bTk62xwOzBqWmmT791SbYbHxnCdjmBtw/view?usp=sharing). Unzip the folder and all the contents and store in your directory as follows. Don't include data when you push to GitHub!
 
