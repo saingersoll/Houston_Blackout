@@ -1,7 +1,7 @@
 ---
 title: 'Homes Impacted by the Houston, TX Blackout (2021)'
-author: "Sofia Ingersoll & Heather Childers"
-date: "2022-10-26"
+author: "Sofia Ingersoll"
+date: "2023-10-26"
 output:
     html_document:
       print_df: paged
