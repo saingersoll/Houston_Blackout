@@ -476,6 +476,8 @@ ggplot(violin_data, aes(x = rev(factor(earning_group)), y = median_income)) +
   coord_flip()
 ```
 
+### Figure 2: Map of Impacted Areas Based on Local Median Income
+
 ```{r fig.width=12, fig.height=8}
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ----                          map of houston                              ----
